@@ -1,3 +1,4 @@
+import lombok.SneakyThrows;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -26,27 +27,40 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
         @Override
         public void onUpdateReceived(Update update) {
             //При отправке сообщения происходит обновление и вызов метода
-            //sendText если сообщение является командой /start
-            Message msg = update.getMessage();
-            User user = msg.getFrom();
-            String message = "Привет " + user.getFirstName() + "! Как Ваши дела?";
-            if(msg.getText().equals("/start")) {
-                sendText(msg.getChatId(), message);
+            //Из обновления тянется инфа о сообщении типа текста, юзера, хуюзера и всё такое
+            if (update.hasMessage()) {
+                Message msg = update.getMessage();
+                User user = msg.getFrom();
+                //String message = "Приветственное сообщение туда-сюда, нужное потом дописать ";
+                if(msg.hasText()) {
+                    if (msg.getText().equals("/start")) {
+                        try {
+                            execute(Buttons.startButtons(msg.getChatId()));
+                        } catch (TelegramApiException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            }
+            //Обрабатываем CallbackQuery
+            else if(update.hasCallbackQuery()){
+                //SendMessage callBack2 = Buttons.servicesButtons(update.getCallbackQuery().getMessage().getChatId());
+                switch(update.getCallbackQuery().getData()) {
+                    case "записатьсяНаУслугу":
+                        try {
+                            execute(Buttons.servicesButtons(update.getCallbackQuery().getMessage().getChatId()));
+                        } catch (TelegramApiException e) {
+                            throw new RuntimeException(e);
+                        }
+                }
+                /*try {
+                    execute(callBack);
+                } catch (TelegramApiException e) {
+                    throw new RuntimeException(e);
+                }*/
             }
         }
 
-        //Метод для отправки сообщения, в качестве параметров передаётся ID отправителя
-        //И сообщение которое необходимо отправить
-        public void sendText(Long who, String what){
-            SendMessage sm = SendMessage.builder()
-                    .chatId(who.toString())
-                    .text(what).build();
-            try {
-                execute(sm);
-            } catch (TelegramApiException e) {
-                throw new RuntimeException(e);
-            }
-        }
         public static void main(String[] args) throws TelegramApiException {
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
             TgBot bot = new TgBot();
